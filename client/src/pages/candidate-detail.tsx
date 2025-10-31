@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { ArrowLeft, Mail, Phone, Linkedin, FileText, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,15 +9,52 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Link } from "wouter";
 import type { Candidate } from "@shared/schema";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { nanoid } from "nanoid";
 
 export default function CandidateDetail() {
   const [, params] = useRoute("/candidates/:id");
   const candidateId = params?.id;
+  const [note, setNote] = useState("");
+  const { toast } = useToast();
 
   const { data: candidate, isLoading } = useQuery<Candidate>({
     queryKey: [`/api/candidates/${candidateId}`],
     enabled: !!candidateId,
   });
+
+  const addNoteMutation = useMutation({
+    mutationFn: async (noteText: string) => {
+      const newTimeline = [
+        ...(candidate?.timeline || []),
+        {
+          id: nanoid(),
+          type: "note_added",
+          note: noteText,
+          timestamp: new Date().toISOString(),
+        },
+      ];
+
+      return apiRequest(`/api/candidates/${candidateId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ timeline: newTimeline, notes: noteText }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/candidates/${candidateId}`] });
+      setNote("");
+      toast({ title: "Note added successfully!" });
+    },
+    onError: () => {
+      toast({ title: "Failed to add note", variant: "destructive" });
+    },
+  });
+
+  const handleAddNote = () => {
+    if (!note.trim()) return;
+    addNoteMutation.mutate(note);
+  };
 
   if (isLoading) {
     return (
@@ -36,6 +74,22 @@ export default function CandidateDetail() {
     .map((n) => n[0])
     .join("")
     .toUpperCase();
+
+  const renderNote = (text: string) => {
+    const mentionRegex = /@(\w+)/g;
+    const parts = text.split(mentionRegex);
+
+    return parts.map((part, index) => {
+      if (index % 2 === 1) {
+        return (
+          <span key={index} className="text-primary font-medium">
+            @{part}
+          </span>
+        );
+      }
+      return <span key={index}>{part}</span>;
+    });
+  };
 
   return (
     <div className="space-y-6" data-testid="page-candidate-detail">
@@ -105,9 +159,9 @@ export default function CandidateDetail() {
                       <div className="w-px h-full bg-border" />
                     </div>
                     <div className="flex-1 pb-4">
-                      <p className="font-medium">{event.type.replace("_", " ")}</p>
+                      <p className="font-medium capitalize">{event.type.replace(/_/g, " ")}</p>
                       {event.stage && <p className="text-sm text-muted-foreground">Stage: {event.stage}</p>}
-                      {event.note && <p className="text-sm mt-1">{event.note}</p>}
+                      {event.note && <p className="text-sm mt-1">{renderNote(event.note)}</p>}
                       <p className="text-xs text-muted-foreground mt-1">
                         {new Date(event.timestamp).toLocaleString()}
                       </p>
@@ -142,12 +196,19 @@ export default function CandidateDetail() {
             </CardHeader>
             <CardContent>
               <Textarea
-                placeholder="Add notes about this candidate..."
+                placeholder="Add notes about this candidate... Use @name for mentions"
                 rows={6}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
                 data-testid="textarea-notes"
               />
-              <Button className="w-full mt-3" data-testid="button-save-note">
-                Save Note
+              <Button
+                className="w-full mt-3"
+                onClick={handleAddNote}
+                disabled={addNoteMutation.isPending || !note.trim()}
+                data-testid="button-save-note"
+              >
+                {addNoteMutation.isPending ? "Saving..." : "Save Note"}
               </Button>
             </CardContent>
           </Card>

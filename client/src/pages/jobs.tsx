@@ -11,10 +11,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { JobCard } from "@/components/job-card";
+import { JobModal } from "@/components/job-modal";
 import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Job } from "@shared/schema";
 
 function SortableJobCard({ job, onEdit, onArchive }: any) {
@@ -41,12 +43,84 @@ function SortableJobCard({ job, onEdit, onArchive }: any) {
 export default function Jobs() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const { toast } = useToast();
 
   const { data, isLoading } = useQuery({
     queryKey: ["/api/jobs", { search, status: statusFilter }],
   });
 
   const jobs = data?.jobs || [];
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const tagsArray = data.tags ? data.tags.split(",").map((t: string) => t.trim()) : [];
+      return apiRequest("/api/jobs", {
+        method: "POST",
+        body: JSON.stringify({ ...data, tags: tagsArray, order: jobs.length }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      setIsModalOpen(false);
+      toast({ title: "Job created successfully!" });
+    },
+    onError: () => {
+      toast({ title: "Failed to create job", variant: "destructive" });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const tagsArray = data.tags ? data.tags.split(",").map((t: string) => t.trim()) : [];
+      return apiRequest(`/api/jobs/${selectedJob?.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ ...data, tags: tagsArray }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      setIsModalOpen(false);
+      setSelectedJob(null);
+      toast({ title: "Job updated successfully!" });
+    },
+    onError: () => {
+      toast({ title: "Failed to update job", variant: "destructive" });
+    },
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: async (job: Job) => {
+      const newStatus = job.status === "active" ? "archived" : "active";
+      return apiRequest(`/api/jobs/${job.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: newStatus }),
+      });
+    },
+    onSuccess: (_, job) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      toast({
+        title: `Job ${job.status === "active" ? "archived" : "unarchived"} successfully!`,
+      });
+    },
+    onError: () => {
+      toast({ title: "Failed to update job status", variant: "destructive" });
+    },
+  });
+
+  const reorderMutation = useMutation({
+    mutationFn: async ({ jobId, newOrder }: { jobId: string; newOrder: number }) => {
+      return apiRequest(`/api/jobs/${jobId}/reorder`, {
+        method: "PATCH",
+        body: JSON.stringify({ order: newOrder }),
+      });
+    },
+    onError: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs"] });
+      toast({ title: "Failed to reorder jobs", variant: "destructive" });
+    },
+  });
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -60,7 +134,37 @@ export default function Jobs() {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    console.log(`Reorder: ${active.id} to position of ${over.id}`);
+    const oldIndex = jobs.findIndex((j: Job) => j.id === active.id);
+    const newIndex = jobs.findIndex((j: Job) => j.id === over.id);
+
+    const reorderedJobs = [...jobs];
+    const [movedJob] = reorderedJobs.splice(oldIndex, 1);
+    reorderedJobs.splice(newIndex, 0, movedJob);
+
+    queryClient.setQueryData(["/api/jobs", { search, status: statusFilter }], {
+      ...data,
+      jobs: reorderedJobs.map((job: Job, index: number) => ({ ...job, order: index })),
+    });
+
+    reorderMutation.mutate({ jobId: active.id as string, newOrder: newIndex });
+  };
+
+  const handleEdit = (job: Job) => {
+    setSelectedJob(job);
+    setIsModalOpen(true);
+  };
+
+  const handleCreate = () => {
+    setSelectedJob(null);
+    setIsModalOpen(true);
+  };
+
+  const handleSubmit = (data: any) => {
+    if (selectedJob) {
+      updateMutation.mutate(data);
+    } else {
+      createMutation.mutate(data);
+    }
   };
 
   return (
@@ -70,7 +174,7 @@ export default function Jobs() {
           <h1 className="text-3xl font-semibold mb-2">Jobs</h1>
           <p className="text-muted-foreground">Manage job postings and track applications</p>
         </div>
-        <Button data-testid="button-create-job">
+        <Button onClick={handleCreate} data-testid="button-create-job">
           <Plus className="h-4 w-4 mr-2" />
           Create Job
         </Button>
@@ -117,14 +221,25 @@ export default function Jobs() {
                 <SortableJobCard
                   key={job.id}
                   job={job}
-                  onEdit={(j: Job) => console.log("Edit job:", j.title)}
-                  onArchive={(j: Job) => console.log("Archive job:", j.title)}
+                  onEdit={handleEdit}
+                  onArchive={(j: Job) => archiveMutation.mutate(j)}
                 />
               ))}
             </div>
           </SortableContext>
         </DndContext>
       )}
+
+      <JobModal
+        open={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedJob(null);
+        }}
+        onSubmit={handleSubmit}
+        job={selectedJob}
+        isLoading={createMutation.isPending || updateMutation.isPending}
+      />
     </div>
   );
 }

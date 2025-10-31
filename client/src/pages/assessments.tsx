@@ -1,17 +1,44 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Plus, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AssessmentModal } from "@/components/assessment-modal";
 import type { Assessment } from "@shared/schema";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Assessments() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { toast } = useToast();
+
   const { data, isLoading } = useQuery({
     queryKey: ["/api/assessments"],
   });
 
   const assessments = data?.assessments || [];
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return apiRequest("/api/assessments", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/assessments"] });
+      setIsModalOpen(false);
+      toast({ title: "Assessment created successfully!" });
+    },
+    onError: () => {
+      toast({ title: "Failed to create assessment", variant: "destructive" });
+    },
+  });
+
+  const handleSubmit = (data: any) => {
+    createMutation.mutate(data);
+  };
 
   return (
     <div className="space-y-6" data-testid="page-assessments">
@@ -20,7 +47,7 @@ export default function Assessments() {
           <h1 className="text-3xl font-semibold mb-2">Assessments</h1>
           <p className="text-muted-foreground">Create and manage job assessments</p>
         </div>
-        <Button data-testid="button-create-assessment">
+        <Button onClick={() => setIsModalOpen(true)} data-testid="button-create-assessment">
           <Plus className="h-4 w-4 mr-2" />
           Create Assessment
         </Button>
@@ -37,7 +64,7 @@ export default function Assessments() {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <FileText className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground mb-4">No assessments yet</p>
-            <Button data-testid="button-create-first-assessment">
+            <Button onClick={() => setIsModalOpen(true)} data-testid="button-create-first-assessment">
               <Plus className="h-4 w-4 mr-2" />
               Create Your First Assessment
             </Button>
@@ -78,6 +105,13 @@ export default function Assessments() {
           ))}
         </div>
       )}
+
+      <AssessmentModal
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleSubmit}
+        isLoading={createMutation.isPending}
+      />
     </div>
   );
 }

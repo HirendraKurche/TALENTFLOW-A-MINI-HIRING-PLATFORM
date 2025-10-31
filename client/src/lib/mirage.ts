@@ -123,7 +123,7 @@ export function makeServer() {
       
       for (let i = 0; i < 1000; i++) {
         const randomJob = jobs[Math.floor(Math.random() * jobs.length)];
-        server.create('candidate', { jobId: randomJob.id });
+        server.create('candidate', { jobId: (randomJob as any).id });
       }
 
       const sampleAssessments = [
@@ -198,22 +198,22 @@ export function makeServer() {
         const { search, status, page = '1', pageSize = '10' } = request.queryParams;
         let jobs = schema.all('job').models;
 
-        if (search) {
-          jobs = jobs.filter(job => 
+        if (search && typeof search === 'string') {
+          jobs = jobs.filter((job: any) => 
             job.title.toLowerCase().includes(search.toLowerCase())
           );
         }
 
-        if (status && status !== 'all') {
-          jobs = jobs.filter(job => job.status === status);
+        if (status && status !== 'all' && typeof status === 'string') {
+          jobs = jobs.filter((job: any) => job.status === status);
         }
 
-        jobs.sort((a, b) => a.order - b.order);
+        jobs.sort((a: any, b: any) => a.order - b.order);
 
-        const startIndex = (parseInt(page) - 1) * parseInt(pageSize);
-        const paginatedJobs = jobs.slice(startIndex, startIndex + parseInt(pageSize));
+        const startIndex = (parseInt(page as string) - 1) * parseInt(pageSize as string);
+        const paginatedJobs = jobs.slice(startIndex, startIndex + parseInt(pageSize as string));
 
-        db.jobs.bulkPut(jobs as Job[]);
+        db.jobs.bulkPut(jobs.map((j: any) => j.attrs));
 
         return {
           jobs: paginatedJobs,
@@ -226,7 +226,7 @@ export function makeServer() {
       this.get('/jobs/:id', (schema, request) => {
         const job = schema.find('job', request.params.id);
         if (job) {
-          db.jobs.put(job.attrs as Job);
+          db.jobs.put((job as any).attrs);
         }
         return job;
       });
@@ -238,7 +238,7 @@ export function makeServer() {
 
         const attrs = JSON.parse(request.requestBody);
         const job = schema.create('job', { ...attrs, id: nanoid(), createdAt: new Date().toISOString() });
-        db.jobs.add(job.attrs as Job);
+        db.jobs.add((job as any).attrs);
         return job;
       });
 
@@ -275,23 +275,23 @@ export function makeServer() {
         const { search, stage, jobId } = request.queryParams;
         let candidates = schema.all('candidate').models;
 
-        if (search) {
+        if (search && typeof search === 'string') {
           const searchLower = search.toLowerCase();
-          candidates = candidates.filter(c => 
+          candidates = candidates.filter((c: any) => 
             c.name.toLowerCase().includes(searchLower) ||
             c.email.toLowerCase().includes(searchLower)
           );
         }
 
-        if (stage && stage !== 'all') {
-          candidates = candidates.filter(c => c.stage === stage);
+        if (stage && stage !== 'all' && typeof stage === 'string') {
+          candidates = candidates.filter((c: any) => c.stage === stage);
         }
 
-        if (jobId) {
-          candidates = candidates.filter(c => c.jobId === jobId);
+        if (jobId && typeof jobId === 'string') {
+          candidates = candidates.filter((c: any) => c.jobId === jobId);
         }
 
-        db.candidates.bulkPut(candidates as Candidate[]);
+        db.candidates.bulkPut(candidates.map((c: any) => c.attrs));
 
         return { candidates };
       });
@@ -299,7 +299,7 @@ export function makeServer() {
       this.get('/candidates/:id', (schema, request) => {
         const candidate = schema.find('candidate', request.params.id);
         if (candidate) {
-          db.candidates.put(candidate.attrs as Candidate);
+          db.candidates.put((candidate as any).attrs);
         }
         return candidate;
       });
@@ -334,11 +334,11 @@ export function makeServer() {
         const { jobId } = request.queryParams;
         let assessments = schema.all('assessment').models;
 
-        if (jobId) {
-          assessments = assessments.filter(a => a.jobId === jobId);
+        if (jobId && typeof jobId === 'string') {
+          assessments = assessments.filter((a: any) => a.jobId === jobId);
         }
 
-        db.assessments.bulkPut(assessments as Assessment[]);
+        db.assessments.bulkPut(assessments.map((a: any) => a.attrs));
 
         return { assessments };
       });
@@ -346,7 +346,7 @@ export function makeServer() {
       this.get('/assessments/:id', (schema, request) => {
         const assessment = schema.find('assessment', request.params.id);
         if (assessment) {
-          db.assessments.put(assessment.attrs as Assessment);
+          db.assessments.put((assessment as any).attrs);
         }
         return assessment;
       });
@@ -358,7 +358,7 @@ export function makeServer() {
 
         const attrs = JSON.parse(request.requestBody);
         const assessment = schema.create('assessment', { ...attrs, id: nanoid(), createdAt: new Date().toISOString() });
-        db.assessments.add(assessment.attrs as Assessment);
+        db.assessments.add((assessment as any).attrs);
         return assessment;
       });
 

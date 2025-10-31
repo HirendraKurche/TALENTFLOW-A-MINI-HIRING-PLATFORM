@@ -14,6 +14,7 @@ import Assessments from "@/pages/assessments";
 import NotFound from "@/pages/not-found";
 import { useEffect } from "react";
 import { makeServer } from "./lib/mirage";
+import { useIndexedDBSync } from "./hooks/use-indexeddb-sync";
 
 function Router() {
   return (
@@ -29,8 +30,10 @@ function Router() {
 }
 
 function App() {
+  useIndexedDBSync();
+
   useEffect(() => {
-    if (process.env.NODE_ENV === "development") {
+    if (import.meta.env.DEV) {
       makeServer();
     }
   }, []);

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Search, Filter, LayoutGrid, LayoutList } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Search, LayoutGrid, LayoutList } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,19 +10,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CandidateRow } from "@/components/candidate-row";
 import { KanbanBoard } from "@/components/kanban-board";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useRef } from "react";
 import type { Candidate } from "@shared/schema";
 import { useLocation } from "wouter";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Candidates() {
   const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState("all");
   const [view, setView] = useState<"list" | "kanban">("kanban");
+  const { toast } = useToast();
 
   const { data, isLoading } = useQuery({
     queryKey: ["/api/candidates", { search, stage: stageFilter }],
@@ -37,6 +39,57 @@ export default function Candidates() {
     const matchesStage = stageFilter === "all" || c.stage === stageFilter;
     return matchesSearch && matchesStage;
   });
+
+  const updateStageMutation = useMutation({
+    mutationFn: async ({ candidateId, newStage }: { candidateId: string; newStage: string }) => {
+      const candidate = candidates.find((c: Candidate) => c.id === candidateId);
+      const newTimeline = [
+        ...(candidate?.timeline || []),
+        {
+          id: Math.random().toString(36),
+          type: "stage_change",
+          stage: newStage,
+          timestamp: new Date().toISOString(),
+        },
+      ];
+      
+      return apiRequest(`/api/candidates/${candidateId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ stage: newStage, timeline: newTimeline }),
+      });
+    },
+    onMutate: async ({ candidateId, newStage }) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/candidates"] });
+
+      const previousData = queryClient.getQueryData(["/api/candidates", { search, stage: stageFilter }]);
+
+      queryClient.setQueryData(["/api/candidates", { search, stage: stageFilter }], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          candidates: old.candidates.map((c: Candidate) =>
+            c.id === candidateId ? { ...c, stage: newStage } : c
+          ),
+        };
+      });
+
+      return { previousData };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(["/api/candidates", { search, stage: stageFilter }], context.previousData);
+      }
+      toast({ title: "Failed to update candidate stage", variant: "destructive" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
+      toast({ title: "Candidate stage updated successfully!" });
+    },
+  });
+
+  const handleStageChange = (candidateId: string, newStage: string) => {
+    updateStageMutation.mutate({ candidateId, newStage });
+  };
 
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -153,7 +206,7 @@ export default function Candidates() {
       ) : (
         <KanbanBoard
           candidates={filteredCandidates}
-          onStageChange={(id, stage) => console.log(`Move ${id} to ${stage}`)}
+          onStageChange={handleStageChange}
           onCardClick={(c) => setLocation(`/candidates/${c.id}`)}
         />
       )}
