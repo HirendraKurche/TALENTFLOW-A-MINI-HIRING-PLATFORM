@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Search, LayoutGrid, LayoutList } from "lucide-react";
+import { Search, LayoutGrid, LayoutList, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { CandidateRow } from "@/components/candidate-row";
 import { KanbanBoard } from "@/components/kanban-board";
+import { CandidateModal } from "@/components/candidate-modal";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useRef } from "react";
 import type { Candidate } from "@shared/schema";
@@ -24,16 +25,21 @@ export default function Candidates() {
   const [search, setSearch] = useState("");
   const [stageFilter, setStageFilter] = useState("all");
   const [view, setView] = useState<"list" | "kanban">("kanban");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const { toast } = useToast();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["/api/candidates", { search, stage: stageFilter }],
+  const { data, isLoading } = useQuery<{ candidates: Candidate[]; total: number; page: number; pageSize: number }>({
+    queryKey: ["/api/candidates", { page: 1, pageSize: 1000 }], // Fetch all candidates once
+    staleTime: 30000, // Cache for 30 seconds since we have all data
   });
 
   const candidates = data?.candidates || [];
+  const total = data?.total || 0;
 
+  // Client-side filtering for instant results (no API calls)
   const filteredCandidates = candidates.filter((c: Candidate) => {
     const matchesSearch =
+      search === "" ||
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.email.toLowerCase().includes(search.toLowerCase());
     const matchesStage = stageFilter === "all" || c.stage === stageFilter;
@@ -91,6 +97,29 @@ export default function Candidates() {
     updateStageMutation.mutate({ candidateId, newStage });
   };
 
+  const addCandidateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return apiRequest("/api/candidates", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
+      setIsAddModalOpen(false);
+      toast({ 
+        title: "Candidate added successfully!",
+        description: "The candidate has been added to the hiring pipeline.",
+      });
+    },
+    onError: () => {
+      toast({ 
+        title: "Failed to add candidate", 
+        variant: "destructive" 
+      });
+    },
+  });
+
   const parentRef = useRef<HTMLDivElement>(null);
 
   const virtualizer = useVirtualizer({
@@ -106,10 +135,17 @@ export default function Candidates() {
         <div>
           <h1 className="text-3xl font-semibold mb-2">Candidates</h1>
           <p className="text-muted-foreground">
-            Track {candidates.length} candidates through your hiring pipeline
+            Track {total} candidates through your hiring pipeline
           </p>
         </div>
         <div className="flex gap-2">
+          <Button
+            onClick={() => setIsAddModalOpen(true)}
+            data-testid="button-add-candidate"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Candidate
+          </Button>
           <Button
             variant={view === "list" ? "default" : "outline"}
             size="icon"
@@ -210,6 +246,13 @@ export default function Candidates() {
           onCardClick={(c) => setLocation(`/candidates/${c.id}`)}
         />
       )}
+
+      <CandidateModal
+        open={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSubmit={(data) => addCandidateMutation.mutate(data)}
+        isLoading={addCandidateMutation.isPending}
+      />
     </div>
   );
 }

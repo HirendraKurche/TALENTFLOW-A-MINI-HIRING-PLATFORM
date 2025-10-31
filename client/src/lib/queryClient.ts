@@ -7,18 +7,36 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Flexible API helper supporting both apiRequest(url, init) and apiRequest(method, url, data)
 export async function apiRequest(
-  method: string,
-  url: string,
-  data?: unknown | undefined,
+  arg1: string,
+  arg2?: string | RequestInit,
+  arg3?: unknown,
 ): Promise<Response> {
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  let url: string;
+  let init: RequestInit | undefined;
 
+  if (typeof arg2 === "string") {
+    // Signature: (method, url, data?)
+    const method = arg1;
+    url = arg2;
+    const data = arg3;
+    init = {
+      method,
+      headers: data ? { "Content-Type": "application/json" } : {},
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+    };
+  } else {
+    // Signature: (url, init?)
+    url = arg1;
+    init = {
+      credentials: "include",
+      ...(arg2 || {}),
+    } as RequestInit;
+  }
+
+  const res = await fetch(url, init);
   await throwIfResNotOk(res);
   return res;
 }
@@ -29,7 +47,16 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    // Support queryKey in the form: [url, params?]
+    const [rawUrl, rawParams] = queryKey as [string, Record<string, unknown> | undefined];
+    const urlObj = new URL((rawUrl as string) || "", window.location.origin);
+    if (rawParams && typeof rawParams === "object") {
+      Object.entries(rawParams)
+        .filter(([, v]) => v !== undefined && v !== null && v !== "")
+        .forEach(([k, v]) => urlObj.searchParams.set(k, String(v)));
+    }
+
+    const res = await fetch(urlObj.pathname + (urlObj.search || ""), {
       credentials: "include",
     });
 

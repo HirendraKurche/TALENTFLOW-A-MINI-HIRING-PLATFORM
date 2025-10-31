@@ -1,39 +1,49 @@
 import { useQuery } from "@tanstack/react-query";
 import { Briefcase, Users, FileText, TrendingUp } from "lucide-react";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import type { Job, Candidate } from "@shared/schema";
+import { useMemo } from "react";
 
 export default function Dashboard() {
-  const { data: jobsData } = useQuery({
-    queryKey: ["/api/jobs"],
+  // Fetch minimal data for dashboard stats - API returns total count without loading all data
+  const { data: jobsData, isLoading: jobsLoading } = useQuery<{ jobs: Job[]; total: number }>({
+    queryKey: ["/api/jobs", { page: 1, pageSize: 25 }], // Get all jobs (only 25)
+    staleTime: 30000, // Cache for 30 seconds
   });
 
-  const { data: candidatesData } = useQuery({
-    queryKey: ["/api/candidates"],
+  const { data: candidatesData, isLoading: candidatesLoading } = useQuery<{ candidates: Candidate[]; total: number }>({
+    queryKey: ["/api/candidates", { page: 1, pageSize: 50 }], // Get first page, but total includes all 1000
+    staleTime: 30000, // Cache for 30 seconds
   });
 
-  const stats = [
+  // Memoize expensive calculations
+  const stats = useMemo(() => [
     {
       title: "Active Jobs",
-      value: jobsData?.jobs?.filter((j: any) => j.status === "active").length || 0,
+      value: jobsData?.jobs?.filter((j: Job) => j.status === "active").length || 0,
       icon: Briefcase,
       color: "text-blue-500",
       link: "/jobs",
+      loading: jobsLoading,
     },
     {
       title: "Total Candidates",
-      value: candidatesData?.candidates?.length || 0,
+      value: candidatesData?.total || 0, // Use total from API
       icon: Users,
       color: "text-green-500",
       link: "/candidates",
+      loading: candidatesLoading,
     },
     {
       title: "In Interview",
-      value: candidatesData?.candidates?.filter((c: any) => c.stage === "interview").length || 0,
+      value: candidatesData?.candidates?.filter((c: Candidate) => c.stage === "interview").length || 0,
       icon: TrendingUp,
       color: "text-orange-500",
       link: "/candidates?stage=interview",
+      loading: candidatesLoading,
     },
     {
       title: "Assessments",
@@ -41,8 +51,9 @@ export default function Dashboard() {
       icon: FileText,
       color: "text-purple-500",
       link: "/assessments",
+      loading: false,
     },
-  ];
+  ], [jobsData, candidatesData, jobsLoading, candidatesLoading]);
 
   return (
     <div className="space-y-8" data-testid="page-dashboard">
@@ -62,7 +73,11 @@ export default function Dashboard() {
                 <stat.icon className={`h-4 w-4 ${stat.color}`} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
+                {stat.loading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <div className="text-2xl font-bold">{stat.value}</div>
+                )}
               </CardContent>
             </Card>
           </Link>

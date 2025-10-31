@@ -43,12 +43,16 @@ function SortableJobCard({ job, onEdit, onArchive }: any) {
 export default function Jobs() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [tagsFilter, setTagsFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(9);
+  const [sort, setSort] = useState<string>("order");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const { toast } = useToast();
 
   const { data, isLoading } = useQuery({
-    queryKey: ["/api/jobs", { search, status: statusFilter }],
+    queryKey: ["/api/jobs", { search, status: statusFilter, tags: tagsFilter, page, pageSize, sort: sort === "order" ? undefined : sort }],
   });
 
   const jobs = data?.jobs || [];
@@ -141,7 +145,7 @@ export default function Jobs() {
     const [movedJob] = reorderedJobs.splice(oldIndex, 1);
     reorderedJobs.splice(newIndex, 0, movedJob);
 
-    queryClient.setQueryData(["/api/jobs", { search, status: statusFilter }], {
+    queryClient.setQueryData(["/api/jobs", { search, status: statusFilter, tags: tagsFilter, page, pageSize }], {
       ...data,
       jobs: reorderedJobs.map((job: Job, index: number) => ({ ...job, order: index })),
     });
@@ -191,6 +195,14 @@ export default function Jobs() {
             data-testid="input-search-jobs"
           />
         </div>
+        <div className="flex-1 min-w-64">
+          <Input
+            placeholder="Filter tags (comma-separated)"
+            value={tagsFilter}
+            onChange={(e) => setTagsFilter(e.target.value)}
+            data-testid="input-tags-filter"
+          />
+        </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40" data-testid="select-status-filter">
             <SelectValue placeholder="Status" />
@@ -199,6 +211,19 @@ export default function Jobs() {
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="active">Active</SelectItem>
             <SelectItem value="archived">Archived</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={sort} onValueChange={setSort}>
+          <SelectTrigger className="w-48" data-testid="select-sort">
+            <SelectValue placeholder="Sort (default by order)" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="order">Default</SelectItem>
+            <SelectItem value="createdAt:desc">Newest</SelectItem>
+            <SelectItem value="createdAt:asc">Oldest</SelectItem>
+            <SelectItem value="title:asc">Title A→Z</SelectItem>
+            <SelectItem value="title:desc">Title Z→A</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -230,6 +255,19 @@ export default function Jobs() {
         </DndContext>
       )}
 
+      {/* Pagination Controls */}
+      <div className="flex items-center justify-between pt-2">
+        <div className="text-sm text-muted-foreground">Page {data?.page || page} of {data?.total ? Math.ceil(data.total / (data.pageSize || pageSize)) : 1}</div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={(data?.page || page) <= 1}>
+            Prev
+          </Button>
+          <Button variant="outline" onClick={() => setPage((p) => p + 1)} disabled={data?.total ? (data.page * data.pageSize) >= data.total : false}>
+            Next
+          </Button>
+        </div>
+      </div>
+
       <JobModal
         open={isModalOpen}
         onClose={() => {
@@ -239,6 +277,7 @@ export default function Jobs() {
         onSubmit={handleSubmit}
         job={selectedJob}
         isLoading={createMutation.isPending || updateMutation.isPending}
+        existingJobs={jobs}
       />
     </div>
   );

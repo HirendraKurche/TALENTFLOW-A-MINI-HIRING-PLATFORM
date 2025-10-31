@@ -18,8 +18,16 @@ const departments = ['Engineering', 'Product', 'Design', 'Marketing', 'Sales', '
 const locations = ['Remote', 'San Francisco', 'New York', 'London', 'Berlin', 'Tokyo'];
 const employmentTypes = ['Full-time', 'Part-time', 'Contract', 'Intern'];
 
+declare global {
+  interface Window { __mirage__?: any }
+}
+
 export function makeServer() {
-  return createServer({
+  if (typeof window !== 'undefined' && (window as any).__mirage__) {
+    return (window as any).__mirage__;
+  }
+
+  const server = createServer({
     models: {
       job: Model,
       candidate: Model,
@@ -126,6 +134,19 @@ export function makeServer() {
         server.create('candidate', { jobId: (randomJob as any).id });
       }
 
+      const makeQuestions = () => ([
+        { id: nanoid(), type: 'single' as const, question: 'Preferred language?', required: true, options: ['JS','TS','Python','Go'] },
+        { id: nanoid(), type: 'multiple' as const, question: 'Frameworks used', required: true, options: ['React','Vue','Angular','Svelte','Node'] },
+        { id: nanoid(), type: 'short_text' as const, question: 'Favorite tool', required: false },
+        { id: nanoid(), type: 'long_text' as const, question: 'Describe a hard bug you fixed', required: true, maxLength: 800 },
+        { id: nanoid(), type: 'numeric' as const, question: 'Years of experience', required: true, minValue: 0, maxValue: 50 },
+        { id: nanoid(), type: 'file' as const, question: 'Upload sample work', required: false },
+        { id: nanoid(), type: 'single' as const, question: 'Open to relocation?', required: true, options: ['Yes','No'] },
+        { id: nanoid(), type: 'short_text' as const, question: 'Current city', required: false, showIfQuestionId: undefined, showIfEquals: undefined } as any,
+        { id: nanoid(), type: 'single' as const, question: 'Interested in management?', required: false, options: ['Yes','No'] },
+        { id: nanoid(), type: 'long_text' as const, question: 'Leadership experience', required: false, maxLength: 600 },
+      ]);
+
       const sampleAssessments = [
         {
           id: nanoid(),
@@ -133,53 +154,28 @@ export function makeServer() {
           title: 'Technical Assessment',
           description: 'Evaluate technical skills and problem-solving abilities',
           sections: [
-            {
-              id: nanoid(),
-              title: 'Technical Knowledge',
-              questions: [
-                {
-                  id: nanoid(),
-                  type: 'single' as const,
-                  question: 'What is your primary programming language?',
-                  required: true,
-                  options: ['JavaScript', 'Python', 'Java', 'Go', 'Ruby'],
-                },
-                {
-                  id: nanoid(),
-                  type: 'multiple' as const,
-                  question: 'Which frameworks have you worked with?',
-                  required: true,
-                  options: ['React', 'Vue', 'Angular', 'Svelte', 'Next.js'],
-                },
-                {
-                  id: nanoid(),
-                  type: 'numeric' as const,
-                  question: 'Years of professional experience?',
-                  required: true,
-                  minValue: 0,
-                  maxValue: 50,
-                },
-              ],
-            },
-            {
-              id: nanoid(),
-              title: 'Coding Challenge',
-              questions: [
-                {
-                  id: nanoid(),
-                  type: 'long_text' as const,
-                  question: 'Explain your approach to solving a complex algorithmic problem.',
-                  required: true,
-                  maxLength: 1000,
-                },
-                {
-                  id: nanoid(),
-                  type: 'file' as const,
-                  question: 'Upload your code solution',
-                  required: false,
-                },
-              ],
-            },
+            { id: nanoid(), title: 'Basics', questions: makeQuestions() },
+            { id: nanoid(), title: 'Deeper Dive', questions: makeQuestions() },
+          ],
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: nanoid(),
+          jobId: jobs[1].id,
+          title: 'Product Sense Assessment',
+          description: 'Evaluate product thinking and prioritization',
+          sections: [
+            { id: nanoid(), title: 'Product Strategy', questions: makeQuestions() },
+          ],
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: nanoid(),
+          jobId: jobs[2].id,
+          title: 'Design Assessment',
+          description: 'Evaluate UX and visual design thinking',
+          sections: [
+            { id: nanoid(), title: 'Design Principles', questions: makeQuestions() },
           ],
           createdAt: new Date().toISOString(),
         },
@@ -192,10 +188,11 @@ export function makeServer() {
 
     routes() {
       this.namespace = 'api';
-      this.timing = randomLatency();
-
+      // All requests use realistic latency as per spec
+      
       this.get('/jobs', (schema, request) => {
-        const { search, status, page = '1', pageSize = '10' } = request.queryParams;
+        this.timing = randomLatency(); // 200-1200ms as per requirement
+        const { search, status, tags, page = '1', pageSize = '10', sort } = request.queryParams;
         let jobs = schema.all('job').models;
 
         if (search && typeof search === 'string') {
@@ -208,18 +205,45 @@ export function makeServer() {
           jobs = jobs.filter((job: any) => job.status === status);
         }
 
-        jobs.sort((a: any, b: any) => a.order - b.order);
+        if (tags && typeof tags === 'string' && tags.trim().length > 0) {
+          const wanted = tags.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
+          if (wanted.length) {
+            jobs = jobs.filter((j: any) => Array.isArray(j.tags) && j.tags.some((t: string) => wanted.includes(t.toLowerCase())));
+          }
+        }
+
+        if (sort && typeof sort === 'string') {
+          const [field, direction] = sort.split(':');
+          jobs.sort((a: any, b: any) => {
+            const av = (a as any)[field];
+            const bv = (b as any)[field];
+            if (av === bv) return 0;
+            const cmp = av > bv ? 1 : -1;
+            return direction === 'desc' ? -cmp : cmp;
+          });
+        } else {
+          jobs.sort((a: any, b: any) => a.order - b.order);
+        }
 
         const startIndex = (parseInt(page as string) - 1) * parseInt(pageSize as string);
         const paginatedJobs = jobs.slice(startIndex, startIndex + parseInt(pageSize as string));
 
-        db.jobs.bulkPut(jobs.map((j: any) => j.attrs));
+        // Write paginated results immediately
+        db.jobs.bulkPut(paginatedJobs.map((j: any) => j.attrs));
+        
+        // Asynchronously write all jobs for full persistence (non-blocking)
+        if (!search && !status && !tags && page === '1') {
+          // Only on initial load without filters
+          setTimeout(() => {
+            db.jobs.bulkPut(jobs.map((j: any) => j.attrs));
+          }, 0);
+        }
 
         return {
           jobs: paginatedJobs,
           total: jobs.length,
-          page: parseInt(page),
-          pageSize: parseInt(pageSize),
+          page: parseInt(page as string),
+          pageSize: parseInt(pageSize as string),
         };
       });
 
@@ -227,22 +251,30 @@ export function makeServer() {
         const job = schema.find('job', request.params.id);
         if (job) {
           db.jobs.put((job as any).attrs);
+          return (job as any).attrs;
         }
-        return job;
+        return new Response(404, {}, { error: 'Not found' });
       });
 
       this.post('/jobs', (schema, request) => {
+        this.timing = randomLatency(); // Realistic latency for writes
         if (shouldError()) {
           return new Response(500, {}, { error: 'Internal server error' });
         }
 
         const attrs = JSON.parse(request.requestBody);
+        // enforce unique slug
+        const existing = schema.all('job').models.find((j: any) => j.slug === attrs.slug);
+        if (existing) {
+          return new Response(400, {}, { error: 'Slug must be unique' });
+        }
         const job = schema.create('job', { ...attrs, id: nanoid(), createdAt: new Date().toISOString() });
         db.jobs.add((job as any).attrs);
         return job;
       });
 
       this.patch('/jobs/:id', (schema, request) => {
+        this.timing = randomLatency(); // Realistic latency for writes
         if (shouldError()) {
           return new Response(500, {}, { error: 'Internal server error' });
         }
@@ -250,6 +282,14 @@ export function makeServer() {
         const id = request.params.id;
         const attrs = JSON.parse(request.requestBody);
         const job = schema.find('job', id);
+        if (attrs.slug) {
+          const exists = schema
+            .all('job')
+            .models.find((j: any) => j.id !== id && j.slug === attrs.slug);
+          if (exists) {
+            return new Response(400, {}, { error: 'Slug must be unique' });
+          }
+        }
         job?.update(attrs);
         if (job) {
           db.jobs.update(id, attrs);
@@ -272,7 +312,8 @@ export function makeServer() {
       });
 
       this.get('/candidates', (schema, request) => {
-        const { search, stage, jobId } = request.queryParams;
+        this.timing = randomLatency(); // 200-1200ms as per requirement
+        const { search, stage, jobId, page = '1', pageSize = '50' } = request.queryParams;
         let candidates = schema.all('candidate').models;
 
         if (search && typeof search === 'string') {
@@ -291,20 +332,61 @@ export function makeServer() {
           candidates = candidates.filter((c: any) => c.jobId === jobId);
         }
 
-        db.candidates.bulkPut(candidates.map((c: any) => c.attrs));
+        candidates.sort((a: any, b: any) => (a.createdAt > b.createdAt ? -1 : 1));
 
-        return { candidates };
+        const startIndex = (parseInt(page as string) - 1) * parseInt(pageSize as string);
+        const paginated = candidates.slice(startIndex, startIndex + parseInt(pageSize as string));
+
+        // Write paginated results immediately for quick access
+        db.candidates.bulkPut(paginated.map((c: any) => c.attrs));
+        
+        // Asynchronously write all candidates for full persistence (non-blocking)
+        if (!search && !stage && !jobId && page === '1') {
+          // Only on initial load without filters
+          setTimeout(() => {
+            db.candidates.bulkPut(candidates.map((c: any) => c.attrs));
+          }, 0);
+        }
+
+        return { candidates: paginated, total: candidates.length, page: parseInt(page as string), pageSize: parseInt(pageSize as string) };
       });
 
       this.get('/candidates/:id', (schema, request) => {
         const candidate = schema.find('candidate', request.params.id);
         if (candidate) {
           db.candidates.put((candidate as any).attrs);
+          return (candidate as any).attrs;
         }
+        return new Response(404, {}, { error: 'Not found' });
+      });
+
+      this.post('/candidates', (schema, request) => {
+        this.timing = randomLatency(); // Realistic latency for writes
+        if (shouldError()) {
+          return new Response(500, {}, { error: 'Failed to create candidate' });
+        }
+
+        const attrs = JSON.parse(request.requestBody);
+        const candidate = schema.create('candidate', {
+          ...attrs,
+          id: nanoid(),
+          stage: attrs.stage || 'applied',
+          avatar: attrs.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${nanoid()}`,
+          timeline: [{
+            id: nanoid(),
+            type: 'stage_change',
+            stage: attrs.stage || 'applied',
+            timestamp: new Date().toISOString(),
+          }],
+          createdAt: new Date().toISOString(),
+        });
+        
+        db.candidates.add((candidate as any).attrs);
         return candidate;
       });
 
       this.patch('/candidates/:id', (schema, request) => {
+        this.timing = randomLatency(); // Realistic latency for writes
         if (shouldError()) {
           return new Response(500, {}, { error: 'Failed to update candidate' });
         }
@@ -343,8 +425,13 @@ export function makeServer() {
         return { assessments };
       });
 
+      // Support GET /assessments/:jobId (by job) and legacy by id
       this.get('/assessments/:id', (schema, request) => {
-        const assessment = schema.find('assessment', request.params.id);
+        let assessment = schema.find('assessment', request.params.id);
+        if (!assessment) {
+          const byJob = schema.all('assessment').models.find((a: any) => a.jobId === request.params.id);
+          if (byJob) assessment = byJob as any;
+        }
         if (assessment) {
           db.assessments.put((assessment as any).attrs);
         }
@@ -362,16 +449,48 @@ export function makeServer() {
         return assessment;
       });
 
+      this.put('/assessments/:jobId', (schema, request) => {
+        if (shouldError()) {
+          return new Response(500, {}, { error: 'Failed to update assessment' });
+        }
+        const { jobId } = request.params;
+        const attrs = JSON.parse(request.requestBody);
+        let existing = schema.all('assessment').models.find((a: any) => a.jobId === jobId);
+        if (existing) {
+          (existing as any).update(attrs);
+          db.assessments.put((existing as any).attrs);
+          return existing;
+        }
+        const created = schema.create('assessment', { ...attrs, id: nanoid(), jobId, createdAt: new Date().toISOString() });
+        db.assessments.add((created as any).attrs);
+        return created;
+      });
+
       this.post('/assessments/:id/submit', (schema, request) => {
         if (shouldError()) {
           return new Response(500, {}, { error: 'Failed to submit assessment' });
         }
 
         const attrs = JSON.parse(request.requestBody);
-        return new Response(200, {}, { success: true, ...attrs });
+        try {
+          db.assessmentResponses.add({
+            id: nanoid(),
+            assessmentId: request.params.id,
+            candidateId: attrs.candidateId,
+            responses: attrs.responses,
+            submittedAt: new Date().toISOString(),
+          } as any);
+        } catch {}
+        return new Response(200, {}, { success: true });
       });
 
       this.passthrough();
     },
   });
+
+  if (typeof window !== 'undefined') {
+    (window as any).__mirage__ = server;
+  }
+
+  return server;
 }

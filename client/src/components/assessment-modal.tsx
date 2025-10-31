@@ -68,6 +68,7 @@ export function AssessmentModal({ open, onClose, onSubmit, isLoading }: Assessme
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" data-testid="dialog-assessment-form">
         <DialogHeader>
           <DialogTitle>Create Assessment</DialogTitle>
+          <p className="text-sm text-muted-foreground">Build sections and questions, then preview before saving.</p>
         </DialogHeader>
         
         <Form {...form}>

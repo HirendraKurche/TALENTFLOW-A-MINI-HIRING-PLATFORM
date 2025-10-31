@@ -11,17 +11,34 @@ export function useIndexedDBSync() {
         const assessments = await db.assessments.toArray();
 
         if (jobs.length > 0) {
+          // Populate base query and common parameterized queries
           queryClient.setQueryData(["/api/jobs"], {
             jobs,
             total: jobs.length,
             page: 1,
             pageSize: 10,
           });
+          queryClient.setQueryData(["/api/jobs", { search: "", status: "all", tags: "", page: 1, pageSize: 9, sort: "order" }], {
+            jobs,
+            total: jobs.length,
+            page: 1,
+            pageSize: 9,
+          });
         }
 
         if (candidates.length > 0) {
+          // Populate base query and common parameterized queries
           queryClient.setQueryData(["/api/candidates"], {
             candidates,
+            total: candidates.length,
+            page: 1,
+            pageSize: 50,
+          });
+          queryClient.setQueryData(["/api/candidates", { search: "", stage: "all" }], {
+            candidates,
+            total: candidates.length,
+            page: 1,
+            pageSize: 50,
           });
         }
 

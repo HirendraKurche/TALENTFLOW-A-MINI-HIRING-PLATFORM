@@ -4,6 +4,7 @@ import { Plus, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "wouter";
 import { AssessmentModal } from "@/components/assessment-modal";
 import type { Assessment } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -99,6 +100,9 @@ export default function Assessments() {
                   <div className="text-xs text-muted-foreground">
                     Created {new Date(assessment.createdAt!).toLocaleDateString()}
                   </div>
+                  <Link href={`/assessments/${assessment.jobId}/run`}>
+                    <Button size="sm" variant="outline">Open Runtime</Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>

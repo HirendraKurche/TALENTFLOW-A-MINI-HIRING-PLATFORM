@@ -3,6 +3,7 @@ import { Card, CardHeader, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Job } from "@shared/schema";
+import { Link } from "wouter";
 
 interface JobCardProps {
   job: Job;
@@ -23,7 +24,9 @@ export function JobCard({ job, onEdit, onArchive, isDragging, dragHandleProps }:
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold truncate" data-testid={`text-job-title-${job.id}`}>{job.title}</h3>
+            <Link href={`/jobs/${job.id}`}>
+              <h3 className="text-lg font-semibold truncate hover:underline cursor-pointer" data-testid={`text-job-title-${job.id}`}>{job.title}</h3>
+            </Link>
             <p className="text-sm text-muted-foreground">{job.department}</p>
           </div>
         </div>
@@ -43,8 +46,8 @@ export function JobCard({ job, onEdit, onArchive, isDragging, dragHandleProps }:
       <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground line-clamp-2">{job.description}</p>
         <div className="flex flex-wrap gap-2">
-          {job.tags?.slice(0, 3).map((tag) => (
-            <Badge key={tag} variant="secondary" data-testid={`badge-tag-${tag}`}>
+          {job.tags?.slice(0, 3).map((tag, idx) => (
+            <Badge key={`${tag}-${idx}`} variant="secondary" data-testid={`badge-tag-${tag}`}>
               {tag}
             </Badge>
           ))}

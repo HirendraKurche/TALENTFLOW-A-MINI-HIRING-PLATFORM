@@ -8,7 +8,6 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { KanbanColumn } from "./kanban-column";
 import { KanbanCard } from "./kanban-card";
 import type { Candidate } from "@shared/schema";
@@ -53,7 +52,12 @@ export function KanbanBoard({ candidates, onStageChange, onCardClick }: KanbanBo
     const candidateId = active.id as string;
     const newStage = over.id as string;
 
-    if (stages.some((s) => s.id === newStage)) {
+    // Get the current candidate to check if stage actually changed
+    const candidate = candidates.find((c) => c.id === candidateId);
+    if (!candidate) return;
+
+    // Only trigger update if stage actually changed
+    if (candidate.stage !== newStage && stages.some((s) => s.id === newStage)) {
       onStageChange?.(candidateId, newStage);
     }
   };
@@ -64,30 +68,25 @@ export function KanbanBoard({ candidates, onStageChange, onCardClick }: KanbanBo
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex gap-4 overflow-x-auto pb-4" data-testid="kanban-board">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 pb-4" data-testid="kanban-board">
         {stages.map((stage) => {
           const stageCandidates = getCandidatesByStage(stage.id);
           return (
-            <SortableContext
+            <KanbanColumn
               key={stage.id}
-              items={stageCandidates.map((c) => c.id)}
-              strategy={verticalListSortingStrategy}
+              id={stage.id}
+              title={stage.title}
+              count={stageCandidates.length}
+              color={stage.color}
             >
-              <KanbanColumn
-                id={stage.id}
-                title={stage.title}
-                count={stageCandidates.length}
-                color={stage.color}
-              >
-                {stageCandidates.map((candidate) => (
-                  <KanbanCard
-                    key={candidate.id}
-                    candidate={candidate}
-                    onClick={() => onCardClick?.(candidate)}
-                  />
-                ))}
-              </KanbanColumn>
-            </SortableContext>
+              {stageCandidates.map((candidate) => (
+                <KanbanCard
+                  key={candidate.id}
+                  candidate={candidate}
+                  onClick={() => onCardClick?.(candidate)}
+                />
+              ))}
+            </KanbanColumn>
           );
         })}
       </div>

@@ -77,6 +77,8 @@ export interface AssessmentQuestion {
   minValue?: number;
   maxValue?: number;
   maxLength?: number;
+  showIfQuestionId?: string;
+  showIfEquals?: string;
 }
 
 export interface AssessmentSection {

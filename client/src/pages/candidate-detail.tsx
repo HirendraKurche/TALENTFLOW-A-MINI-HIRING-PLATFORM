@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { ArrowLeft, Mail, Phone, Linkedin, FileText, Clock } from "lucide-react";
@@ -17,12 +17,22 @@ export default function CandidateDetail() {
   const [, params] = useRoute("/candidates/:id");
   const candidateId = params?.id;
   const [note, setNote] = useState("");
+  const noteRef = useRef<HTMLTextAreaElement>(null);
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
   const { toast } = useToast();
 
   const { data: candidate, isLoading } = useQuery<Candidate>({
     queryKey: [`/api/candidates/${candidateId}`],
     enabled: !!candidateId,
   });
+
+  const { data: allCandidates } = useQuery<{ candidates: Candidate[] }>({
+    queryKey: ["/api/candidates"],
+  });
+
+  const mentionOptions = (allCandidates?.candidates || []).slice(0, 100).map((c) => c.name);
+  const filteredMentions = mentionOptions.filter((n) => n.toLowerCase().startsWith(mentionQuery.toLowerCase())).slice(0, 5);
 
   const addNoteMutation = useMutation({
     mutationFn: async (noteText: string) => {
@@ -54,6 +64,43 @@ export default function CandidateDetail() {
   const handleAddNote = () => {
     if (!note.trim()) return;
     addNoteMutation.mutate(note);
+  };
+
+  // Simple @mention detection
+  useEffect(() => {
+    const lastAt = note.lastIndexOf("@");
+    if (lastAt >= 0) {
+      const after = note.slice(lastAt + 1);
+      if (/^[\w]{0,20}$/.test(after)) {
+        setMentionQuery(after);
+        setShowMentions(true);
+        return;
+      }
+    }
+    setShowMentions(false);
+    setMentionQuery("");
+  }, [note]);
+
+  const insertMention = (name: string) => {
+    const textarea = noteRef.current;
+    const text = note;
+    const lastAt = text.lastIndexOf("@");
+    if (lastAt >= 0) {
+      const before = text.slice(0, lastAt + 1);
+      const after = text.slice(lastAt + 1);
+      const rest = after.replace(/^[\w]{0,20}/, "");
+      const newText = `${before}${name}${rest} `;
+      setNote(newText);
+      setShowMentions(false);
+      setMentionQuery("");
+      // move caret to end
+      requestAnimationFrame(() => {
+        if (textarea) {
+          textarea.selectionStart = textarea.selectionEnd = newText.length;
+          textarea.focus();
+        }
+      });
+    }
   };
 
   if (isLoading) {
@@ -195,13 +242,30 @@ export default function CandidateDetail() {
               <CardTitle>Notes</CardTitle>
             </CardHeader>
             <CardContent>
-              <Textarea
+              <div className="relative">
+                <Textarea
                 placeholder="Add notes about this candidate... Use @name for mentions"
                 rows={6}
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
+                ref={noteRef}
                 data-testid="textarea-notes"
               />
+              {showMentions && filteredMentions.length > 0 && (
+                <div className="absolute z-10 left-0 right-0 mt-1 border rounded-md bg-popover shadow-sm p-1 max-h-48 overflow-auto" role="listbox">
+                  {filteredMentions.map((name) => (
+                    <button
+                      key={name}
+                      className="w-full text-left px-2 py-1 hover:bg-accent rounded"
+                      onClick={() => insertMention(name)}
+                      type="button"
+                    >
+                      @{name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              </div>
               <Button
                 className="w-full mt-3"
                 onClick={handleAddNote}

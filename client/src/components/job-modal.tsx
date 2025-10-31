@@ -48,9 +48,10 @@ interface JobModalProps {
   onSubmit: (data: JobFormData) => void;
   job?: Job | null;
   isLoading?: boolean;
+  existingJobs?: Job[];
 }
 
-export function JobModal({ open, onClose, onSubmit, job, isLoading }: JobModalProps) {
+export function JobModal({ open, onClose, onSubmit, job, isLoading, existingJobs = [] }: JobModalProps) {
   const form = useForm<JobFormData>({
     resolver: zodResolver(jobSchema),
     defaultValues: {
@@ -81,6 +82,11 @@ export function JobModal({ open, onClose, onSubmit, job, isLoading }: JobModalPr
   }, [job, open, form]);
 
   const handleSubmit = (data: JobFormData) => {
+    const duplicate = existingJobs.find((j) => j.slug === data.slug && j.id !== job?.id);
+    if (duplicate) {
+      form.setError("slug", { message: "Slug must be unique" });
+      return;
+    }
     onSubmit(data);
   };
 
@@ -89,6 +95,7 @@ export function JobModal({ open, onClose, onSubmit, job, isLoading }: JobModalPr
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" data-testid="dialog-job-form">
         <DialogHeader>
           <DialogTitle>{job ? "Edit Job" : "Create Job"}</DialogTitle>
+          <p className="text-sm text-muted-foreground">Title and unique slug are required.</p>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">

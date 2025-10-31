@@ -221,6 +221,58 @@ export function AssessmentBuilder({ sections, onSectionsChange }: AssessmentBuil
                             </div>
                           </div>
                         )}
+
+                        {question.type === "long_text" && (
+                          <div>
+                            <Label>Max Length</Label>
+                            <Input
+                              type="number"
+                              value={question.maxLength || ""}
+                              onChange={(e) =>
+                                updateQuestion(section.id, question.id, {
+                                  maxLength: parseInt(e.target.value),
+                                })
+                              }
+                              placeholder="e.g., 500"
+                              data-testid={`input-max-length-${question.id}`}
+                            />
+                          </div>
+                        )}
+
+                        <div className="border-t pt-3 mt-3">
+                          <Label className="text-xs text-muted-foreground">Conditional Logic (optional)</Label>
+                          <div className="grid grid-cols-2 gap-3 mt-2">
+                            <div>
+                              <Label className="text-xs">Show if Question ID equals</Label>
+                              <Input
+                                value={question.showIfQuestionId || ""}
+                                onChange={(e) =>
+                                  updateQuestion(section.id, question.id, {
+                                    showIfQuestionId: e.target.value || undefined,
+                                  })
+                                }
+                                placeholder="Question ID"
+                                data-testid={`input-show-if-question-${question.id}`}
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs">Value</Label>
+                              <Input
+                                value={question.showIfEquals || ""}
+                                onChange={(e) =>
+                                  updateQuestion(section.id, question.id, {
+                                    showIfEquals: e.target.value || undefined,
+                                  })
+                                }
+                                placeholder="e.g., Yes"
+                                data-testid={`input-show-if-equals-${question.id}`}
+                              />
+                            </div>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            This question will only appear if the specified question has the given value.
+                          </p>
+                        </div>
                       </div>
 
                       <Button
