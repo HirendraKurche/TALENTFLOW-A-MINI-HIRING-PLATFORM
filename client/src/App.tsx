@@ -67,11 +67,10 @@ function App() {
   useIndexedDBSync();
 
   useEffect(() => {
-    if (import.meta.env.DEV) {
-      const w = window as any;
-      if (!w.__mirage) {
-        w.__mirage = makeServer();
-      }
+    // Enable MirageJS in both development AND production for demo purposes
+    const w = window as any;
+    if (!w.__mirage) {
+      w.__mirage = makeServer();
     }
   }, []);
 
