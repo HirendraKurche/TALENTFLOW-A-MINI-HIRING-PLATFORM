@@ -1,0 +1,139 @@
+You are an expert senior React developer. Build a **complete frontend-only React application** called **TalentFlow – A Mini Hiring Platform** that meets the following detailed specification.
+
+---
+
+## 🎯 Project Overview
+Create a responsive and well-structured React app (in **pure JavaScript, no TypeScript**) that allows an HR team to manage:
+1. **Jobs** (create, edit, archive, reorder)
+2. **Candidates** (apply to jobs, move between stages)
+3. **Assessments** (job-specific quizzes/forms)
+
+There is **no backend** — use **MirageJS** or **MSW** to mock REST APIs and **IndexedDB** (via **Dexie** or **localForage**) for persistence.
+
+Use **Vite + React (JavaScript)** with modern tools:
+- React Router DOM for navigation
+- Zustand or Redux Toolkit for state management
+- React Hook Form + Yup for form validation
+- TailwindCSS + shadcn/ui for UI
+- React Query (TanStack Query) for data fetching layer
+- React Beautiful DnD or DnD Kit for drag-and-drop
+- React Virtualized for large candidate lists
+- Framer Motion for smooth animations and transitions
+
+---
+
+## 🧩 Core Features
+
+### 1. Jobs Board
+- Paginated, filterable job list (search by title, filter by status or tags)
+- Create/Edit Job in modal or separate route
+- Validation: title required, slug unique
+- Archive/Unarchive jobs
+- Reorder jobs with drag-and-drop (optimistic updates and rollback on failure)
+- Deep link: `/jobs/:jobId`
+- API endpoints to mock:
+  - `GET /jobs?search=&status=&page=&pageSize=&sort=`
+  - `POST /jobs`
+  - `PATCH /jobs/:id`
+  - `PATCH /jobs/:id/reorder`
+
+### 2. Candidates
+- Virtualized list of **1000+ seeded candidates**
+- Client-side search (by name/email) + server-like filter (by stage)
+- Candidate profile route `/candidates/:id` with timeline of status changes
+- Move candidates between stages using a **kanban drag-and-drop board**
+- Add notes with `@mentions` (just render mentions, no logic needed)
+
+### 3. Assessments
+- Job-specific assessment builder
+- Add sections + questions:
+  - Single choice
+  - Multiple choice
+  - Short text
+  - Long text
+  - Numeric (with range)
+  - File upload (stub only)
+- Live preview pane that renders a fillable form
+- Validate fields (required, numeric range, max length, conditional logic)
+- Persist builder + candidate responses locally (IndexedDB)
+- Submit responses using `POST /assessments/:jobId/submit`
+
+---
+
+## 💾 Data & Mock API (MirageJS or MSW)
+Simulate endpoints for:
+- Jobs
+- Candidates
+- Assessments
+
+### Requirements:
+- Inject latency (200–1200ms)
+- 5–10% error rate on write endpoints
+- Seed:
+  - 25 jobs (mixed active/archived)
+  - 1000 candidates (randomly assigned to jobs + stages)
+  - 3+ assessments (10+ questions each)
+- Persist all data locally using IndexedDB (via Dexie/localForage)
+- On page reload, restore app state from IndexedDB
+- Handle optimistic updates + rollback on failure
+
+---
+
+## 🧠 State & Persistence
+- Use Zustand or Redux Toolkit for global state
+- Sync MirageJS/MSW “network” data with IndexedDB
+- Use write-through caching (update both Mirage and IndexedDB)
+- Restore data on reload automatically
+
+---
+
+## 🖥 UI / UX
+- Dashboard-style layout with a sidebar (Jobs / Candidates / Assessments)
+- Clean, professional interface
+- Responsive design for desktop and mobile
+- TailwindCSS + shadcn/ui components for layout
+- Framer Motion for animations
+- Show loading and error states for data operations
+
+---
+
+## 🧰 Tech Stack Summary
+- React (JavaScript, no TypeScript)
+- Vite (build tool)
+- TailwindCSS + shadcn/ui (UI framework)
+- Zustand or Redux Toolkit (state)
+- React Query (data fetching)
+- MirageJS or MSW (API simulation)
+- Dexie or localForage (IndexedDB persistence)
+- React Router DOM (routing)
+- React Virtualized (candidate list)
+- React DnD Kit (drag-and-drop)
+- React Hook Form + Yup (validation)
+- Framer Motion (animations)
+
+---
+
+## 📦 Deliverables
+- **Deployed app link** (Vercel / Netlify)
+- **GitHub repository**
+- **README** file including:
+  - Setup instructions
+  - Architecture overview
+  - Design choices
+  - Known issues / limitations
+
+---
+
+## 🏆 Evaluation Focus
+- Code quality and modular structure
+- Functional completeness
+- UI/UX quality
+- State management
+- IndexedDB + Mirage/MSW integration
+- Documentation quality
+- Bonus: animations, dark mode, responsive layout
+
+---
+
+Generate complete **React (JavaScript) source code** with folder structure, reusable components, hooks, mock data seeding, and example UI for each module.
+Include comments explaining important parts of logic and architecture.
