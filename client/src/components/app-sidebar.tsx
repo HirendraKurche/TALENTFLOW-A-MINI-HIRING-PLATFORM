@@ -43,7 +43,7 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="p-4">
-        <div className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Briefcase className="h-5 w-5" />
           </div>
@@ -51,7 +51,7 @@ export function AppSidebar() {
             <h1 className="text-lg font-semibold">TalentFlow</h1>
             <p className="text-xs text-muted-foreground">Hiring Platform</p>
           </div>
-        </div>
+        </Link>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>

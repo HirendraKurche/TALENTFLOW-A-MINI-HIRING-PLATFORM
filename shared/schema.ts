@@ -1,47 +1,35 @@
-import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Jobs schema
-export const jobs = pgTable("jobs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  title: text("title").notNull(),
-  slug: text("slug").notNull().unique(),
-  description: text("description"),
-  department: text("department"),
-  location: text("location"),
-  employmentType: text("employment_type"),
-  tags: text("tags").array(),
-  status: text("status").notNull().default("active"),
-  order: integer("order").notNull().default(0),
-  createdAt: timestamp("created_at").defaultNow(),
-});
+// Job types
+export interface Job {
+  id: string;
+  title: string;
+  slug: string;
+  description?: string;
+  department?: string;
+  location?: string;
+  employmentType?: string;
+  tags?: string[];
+  status: string;
+  order: number;
+  createdAt: string;
+}
 
-export const insertJobSchema = createInsertSchema(jobs).omit({
-  id: true,
-  createdAt: true,
+export const insertJobSchema = z.object({
+  title: z.string(),
+  slug: z.string(),
+  description: z.string().optional(),
+  department: z.string().optional(),
+  location: z.string().optional(),
+  employmentType: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  status: z.string().default("active"),
+  order: z.number().default(0),
 });
 
 export type InsertJob = z.infer<typeof insertJobSchema>;
-export type Job = typeof jobs.$inferSelect;
 
-// Candidates schema
-export const candidates = pgTable("candidates", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull(),
-  email: text("email").notNull(),
-  phone: text("phone"),
-  avatar: text("avatar"),
-  jobId: varchar("job_id"),
-  stage: text("stage").notNull().default("applied"),
-  resumeUrl: text("resume_url"),
-  linkedinUrl: text("linkedin_url"),
-  notes: text("notes"),
-  timeline: jsonb("timeline").$type<TimelineEvent[]>().default([]),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
+// Candidate types
 export interface TimelineEvent {
   id: string;
   type: string;
@@ -50,24 +38,37 @@ export interface TimelineEvent {
   timestamp: string;
 }
 
-export const insertCandidateSchema = createInsertSchema(candidates).omit({
-  id: true,
-  createdAt: true,
+export interface Candidate {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  avatar?: string;
+  jobId?: string;
+  stage: string;
+  resumeUrl?: string;
+  linkedinUrl?: string;
+  notes?: string;
+  timeline?: TimelineEvent[];
+  createdAt: string;
+}
+
+export const insertCandidateSchema = z.object({
+  name: z.string(),
+  email: z.string().email(),
+  phone: z.string().optional(),
+  avatar: z.string().optional(),
+  jobId: z.string().optional(),
+  stage: z.string().default("applied"),
+  resumeUrl: z.string().optional(),
+  linkedinUrl: z.string().optional(),
+  notes: z.string().optional(),
+  timeline: z.array(z.any()).optional(),
 });
 
 export type InsertCandidate = z.infer<typeof insertCandidateSchema>;
-export type Candidate = typeof candidates.$inferSelect;
 
-// Assessment schema
-export const assessments = pgTable("assessments", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  jobId: varchar("job_id").notNull(),
-  title: text("title").notNull(),
-  description: text("description"),
-  sections: jsonb("sections").$type<AssessmentSection[]>().notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
+// Assessment types
 export interface AssessmentQuestion {
   id: string;
   type: "single" | "multiple" | "short_text" | "long_text" | "numeric" | "file";
@@ -87,42 +88,52 @@ export interface AssessmentSection {
   questions: AssessmentQuestion[];
 }
 
-export const insertAssessmentSchema = createInsertSchema(assessments).omit({
-  id: true,
-  createdAt: true,
+export interface Assessment {
+  id: string;
+  jobId: string;
+  title: string;
+  description?: string;
+  sections: AssessmentSection[];
+  createdAt: string;
+}
+
+export const insertAssessmentSchema = z.object({
+  jobId: z.string(),
+  title: z.string(),
+  description: z.string().optional(),
+  sections: z.array(z.any()),
 });
 
 export type InsertAssessment = z.infer<typeof insertAssessmentSchema>;
-export type Assessment = typeof assessments.$inferSelect;
 
-// Assessment Response schema
-export const assessmentResponses = pgTable("assessment_responses", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  assessmentId: varchar("assessment_id").notNull(),
-  candidateId: varchar("candidate_id").notNull(),
-  responses: jsonb("responses").$type<Record<string, any>>().notNull(),
-  submittedAt: timestamp("submitted_at").defaultNow(),
-});
+// Assessment Response types
+export interface AssessmentResponse {
+  id: string;
+  assessmentId: string;
+  candidateId: string;
+  responses: Record<string, any>;
+  submittedAt: string;
+}
 
-export const insertAssessmentResponseSchema = createInsertSchema(assessmentResponses).omit({
-  id: true,
-  submittedAt: true,
+export const insertAssessmentResponseSchema = z.object({
+  assessmentId: z.string(),
+  candidateId: z.string(),
+  responses: z.record(z.any()),
 });
 
 export type InsertAssessmentResponse = z.infer<typeof insertAssessmentResponseSchema>;
-export type AssessmentResponse = typeof assessmentResponses.$inferSelect;
 
-// Keep users for future auth
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-});
+// User types (for future auth)
+export interface User {
+  id: string;
+  username: string;
+  password: string;
+}
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const insertUserSchema = z.object({
+  username: z.string(),
+  password: z.string(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+

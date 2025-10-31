@@ -7,6 +7,8 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeProvider } from "@/hooks/use-theme";
 import Landing from "@/pages/landing";
+import About from "@/pages/about";
+import Features from "@/pages/features";
 import Dashboard from "@/pages/dashboard";
 import Jobs from "@/pages/jobs";
 import JobDetail from "@/pages/job-detail";
@@ -23,6 +25,8 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Landing} />
+      <Route path="/about" component={About} />
+      <Route path="/features" component={Features} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/jobs" component={Jobs} />
       <Route path="/jobs/:id" component={JobDetail} />
@@ -37,7 +41,7 @@ function Router() {
 
 function AppLayout() {
   const [location] = useLocation();
-  const isLandingPage = location === "/";
+  const isLandingPage = location === "/" || location === "/about" || location === "/features";
 
   if (isLandingPage) {
     return <Router />;

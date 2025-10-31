@@ -1,201 +1,346 @@
-import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Briefcase,
   Users,
   FileText,
-  LayoutDashboard,
-  ArrowRight,
-  Shield,
+  BarChart3,
+  Eye,
   Zap,
-  Database,
+  Shield,
+  Download,
+  RotateCcw,
+  Database as DatabaseIcon,
 } from "lucide-react";
-import { useState } from "react";
 
 export default function Landing() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Since this is a demo, just redirect to dashboard
+  const handleGetStarted = () => {
     window.location.href = "/dashboard";
   };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="border-b border-border">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-sm">
+        <div className="container mx-auto max-w-6xl px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Briefcase className="w-5 h-5 text-primary-foreground" />
+            <a href="/" className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
+              <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
+                <Briefcase className="w-4 h-4 text-primary-foreground" />
               </div>
-              <div>
-                <span className="text-xl font-bold tracking-tight">TalentFlow</span>
-                <span className="ml-2 text-xs text-muted-foreground">HR Platform</span>
-              </div>
-            </div>
+              <h2 className="text-lg font-bold tracking-tight">TF | TalentFlow</h2>
+            </a>
 
-            {/* Theme Toggle */}
-            <ThemeToggle />
+            {/* Navigation */}
+            <nav className="hidden md:flex items-center gap-8">
+              <a href="/" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                Home
+              </a>
+              <a href="/about" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                About
+              </a>
+              <a href="/features" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+                Features
+              </a>
+            </nav>
+            <div className="flex items-center gap-3">
+              <Button onClick={handleGetStarted} className="rounded-full shadow-lg">
+                Start
+              </Button>
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-6xl grid md:grid-cols-2 gap-8 items-center">
-          {/* Left Side - Login Form */}
-          <Card className="w-full max-w-md mx-auto">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-              <CardDescription>
-                Sign in to your TalentFlow HR account to manage hiring
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="hr@company.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button type="submit" className="w-full" size="lg">
-                  Sign In to Dashboard
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </form>
-
-              <div className="mt-6 p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground mb-2">
-                  <strong>Demo Access:</strong> This is a frontend-only demo
-                </p>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => (window.location.href = "/dashboard")}
+      <main className="flex-1">
+        {/* Hero Section */}
+        <section className="relative py-20 sm:py-28">
+          <div className="absolute inset-0 -z-10 mx-auto max-w-6xl">
+            <div className="absolute inset-y-0 left-0 w-1/3 bg-primary/5 rounded-full blur-3xl"></div>
+            <div className="absolute inset-y-0 right-0 w-1/3 bg-blue-500/5 rounded-full blur-3xl"></div>
+          </div>
+          <div className="container mx-auto max-w-6xl px-4 text-center">
+            <h1 className="text-4xl font-bold tracking-tight sm:text-6xl">
+              TalentFlow — Professional Hiring Platform
+            </h1>
+            <h2 className="mt-6 text-lg leading-8 text-muted-foreground sm:text-xl">
+              Streamline Your Hiring Process
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground">
+              Find the best candidates with our intuitive and powerful tools. TalentFlow simplifies every step of your recruitment journey, from posting jobs to making the final offer.
+            </p>
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+              <Button 
+                size="lg" 
+                onClick={handleGetStarted}
+                className="rounded-full px-8 shadow-lg shadow-primary/40 hover:shadow-xl transition-shadow"
+              >
+                Get Started
+              </Button>
+            </div>
+            
+            {/* Video Player */}
+            <div className="mt-16 w-full max-w-4xl mx-auto">
+              <div className="rounded-2xl overflow-hidden shadow-2xl border border-border">
+                <video 
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  controls 
+                  className="w-full h-auto"
                 >
-                  Enter Demo Dashboard
-                </Button>
+                  <source src="/e51f2e93-9ad1-4484-9ac5-29043f95e567.mp4" type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+        </section>
 
-          {/* Right Side - Features Overview */}
-          <div className="space-y-6 hidden md:block">
-            <div>
-              <h2 className="text-3xl font-bold mb-2">
-                Internal Hiring Management System
-              </h2>
-              <p className="text-lg text-muted-foreground">
-                Streamline your recruitment process from job posting to candidate onboarding
+        {/* Core Features Section */}
+        <section id="features" className="py-16 sm:py-24">
+          <div className="container mx-auto max-w-6xl px-4">
+            <div className="mx-auto max-w-2xl text-center">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">Core Features</h2>
+              <p className="mt-4 text-lg leading-8 text-muted-foreground">
+                Everything you need to manage your recruitment pipeline efficiently and effectively.
               </p>
             </div>
-
-            <div className="space-y-4">
+            <div className="mx-auto mt-16 grid max-w-none grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
               {/* Feature 1 */}
-              <div className="flex gap-4 p-4 rounded-lg border border-border bg-card">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <LayoutDashboard className="w-5 h-5 text-primary" />
+              <div className="flex flex-col gap-3 rounded-xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-lg">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Briefcase className="h-6 w-6" />
                 </div>
-                <div>
-                  <h3 className="font-semibold mb-1">Manage Job Openings</h3>
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-lg font-bold">Job Management</h3>
                   <p className="text-sm text-muted-foreground">
-                    Create, edit, and track all your job postings with advanced filtering and search
+                    Create, publish, and manage job postings across multiple platforms with ease.
                   </p>
                 </div>
               </div>
 
               {/* Feature 2 */}
-              <div className="flex gap-4 p-4 rounded-lg border border-border bg-card">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Users className="w-5 h-5 text-primary" />
+              <div className="flex flex-col gap-3 rounded-xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-lg">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Users className="h-6 w-6" />
                 </div>
-                <div>
-                  <h3 className="font-semibold mb-1">Track 1000+ Candidates</h3>
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-lg font-bold">Candidate Pipeline</h3>
                   <p className="text-sm text-muted-foreground">
-                    Visualize candidate pipeline with Kanban boards and manage stages efficiently
+                    Visualize and track candidates through every stage of the hiring process.
                   </p>
                 </div>
               </div>
 
               {/* Feature 3 */}
-              <div className="flex gap-4 p-4 rounded-lg border border-border bg-card">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <FileText className="w-5 h-5 text-primary" />
+              <div className="flex flex-col gap-3 rounded-xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-lg">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <FileText className="h-6 w-6" />
                 </div>
-                <div>
-                  <h3 className="font-semibold mb-1">Custom Assessments</h3>
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-lg font-bold">Smart Assessments</h3>
                   <p className="text-sm text-muted-foreground">
-                    Build job-specific tests with multiple question types and conditional logic
+                    Use data-driven assessments to identify the most qualified candidates.
                   </p>
                 </div>
               </div>
 
               {/* Feature 4 */}
-              <div className="flex gap-4 p-4 rounded-lg border border-border bg-card">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Database className="w-5 h-5 text-primary" />
+              <div className="flex flex-col gap-3 rounded-xl border bg-card p-6 shadow-sm transition-shadow hover:shadow-lg">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <BarChart3 className="h-6 w-6" />
                 </div>
-                <div>
-                  <h3 className="font-semibold mb-1">Local Data Persistence</h3>
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-lg font-bold">Analytics & Reports</h3>
                   <p className="text-sm text-muted-foreground">
-                    All data stored locally with IndexedDB - no backend required for demo
+                    Gain valuable insights with comprehensive reports and analytics dashboards.
                   </p>
                 </div>
               </div>
             </div>
+          </div>
+        </section>
 
-            {/* Tech Stack Info */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground pt-4 border-t border-border">
-              <Shield className="w-4 h-4" />
-              <span>Frontend-only demo</span>
-              <span>â€¢</span>
-              <Zap className="w-4 h-4" />
-              <span>Mock API with MirageJS</span>
-              <span>â€¢</span>
-              <Database className="w-4 h-4" />
-              <span>IndexedDB Storage</span>
+        {/* Key Advantages Section */}
+        <section id="advantages" className="bg-muted/50 py-16 sm:py-24">
+          <div className="container mx-auto max-w-6xl px-4">
+            <h2 className="text-center text-3xl font-bold tracking-tight sm:text-4xl">
+              Key Advantages
+            </h2>
+            <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+              <div className="flex gap-4 rounded-xl p-4">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+                  <Eye className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold">Pipeline Visibility</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Get a clear, real-time view of your entire candidate pipeline.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 rounded-xl p-4">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+                  <Zap className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold">Fast Performance</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    A blazing-fast interface that keeps your team productive and focused.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 rounded-xl p-4">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+                  <Shield className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold">Data Security</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Your data is safe with enterprise-grade security and compliance.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </section>
+
+        {/* Data Management Section */}
+        <section className="py-16 sm:py-24">
+          <div className="container mx-auto max-w-3xl px-4 text-center">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              Complete Control Over Your Data
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-muted-foreground">
+              We believe in data ownership. Easily manage, export, or reset your recruitment data at any time, ensuring you're always in command.
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
+              <Button variant="outline" className="gap-2">
+                <Download className="h-4 w-4" />
+                Export All Data
+              </Button>
+              <Button variant="outline" className="gap-2">
+                <RotateCcw className="h-4 w-4" />
+                Reset Database
+              </Button>
+              <Button variant="outline" className="gap-2">
+                <DatabaseIcon className="h-4 w-4" />
+                View Storage Status
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* Final CTA Section */}
+        <section className="container mx-auto max-w-6xl px-4 py-16 sm:py-24">
+          <div className="rounded-xl bg-primary dark:bg-slate-900/50 p-10 md:p-16 text-center flex flex-col items-center gap-6 border-2 border-primary/20">
+            <h2 className="text-white text-3xl font-bold tracking-tight sm:text-4xl">
+              Ready to Get Started?
+            </h2>
+            <p className="text-slate-200 dark:text-slate-300 max-w-xl text-lg leading-8">
+              Transform your hiring process today. Join thousands of companies that trust TalentFlow to find the best talent.
+            </p>
+            <Button 
+              size="lg" 
+              onClick={handleGetStarted}
+              className="rounded-lg px-8 shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-r from-blue-500 to-teal-500 text-white"
+            >
+              Start Now
+            </Button>
+          </div>
+        </section>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border py-6">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-muted-foreground">
-              Â© 2025 TalentFlow - Internal HR Platform Demo
-            </p>
-            <div className="flex gap-4 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-primary transition-colors">Documentation</a>
-              <a href="#" className="hover:text-primary transition-colors">GitHub</a>
-              <a href="#" className="hover:text-primary transition-colors">Technical Assignment</a>
+      <footer className="bg-muted/50 border-t">
+        <div className="container mx-auto max-w-6xl px-4 py-12">
+          <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+            <div className="col-span-2 md:col-span-1">
+              <a href="/" className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity w-fit">
+                <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
+                  <Briefcase className="w-4 h-4 text-primary-foreground" />
+                </div>
+                <h2 className="text-lg font-bold">TalentFlow</h2>
+              </a>
+              <p className="mt-4 text-sm text-muted-foreground">
+                The modern hiring platform for growing teams.
+              </p>
             </div>
+
+            <div>
+              <h3 className="text-sm font-semibold">Product</h3>
+              <ul className="mt-4 space-y-3">
+                <li>
+                  <a href="/features" className="text-sm text-muted-foreground hover:text-primary">
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-primary">
+                    Pricing
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-primary">
+                    Integrations
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-primary">
+                    Demo
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold">Company</h3>
+              <ul className="mt-4 space-y-3">
+                <li>
+                  <a href="/about" className="text-sm text-muted-foreground hover:text-primary">
+                    About Us
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-primary">
+                    Careers
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-primary">
+                    Contact
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold">Legal</h3>
+              <ul className="mt-4 space-y-3">
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-primary">
+                    Privacy Policy
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="text-sm text-muted-foreground hover:text-primary">
+                    Terms of Service
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-12 border-t pt-8">
+            <p className="text-sm text-muted-foreground text-center">
+              © 2024 TalentFlow, Inc. All rights reserved.
+            </p>
           </div>
         </div>
       </footer>
