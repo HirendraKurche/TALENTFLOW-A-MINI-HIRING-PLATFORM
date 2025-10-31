@@ -23,8 +23,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
 const candidateSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Valid email is required"),
+  name: z.string().min(1, "Name is required").min(2, "Name must be at least 2 characters"),
+  email: z.string().min(1, "Email is required").email("Please enter a valid email address"),
   phone: z.string().optional(),
   linkedinUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   resumeUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
@@ -129,8 +129,9 @@ export function CandidateModal({
                 <FormItem>
                   <FormLabel>Phone Number</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="+1 234-567-8900" data-testid="input-candidate-phone" />
+                    <Input {...field} type="tel" placeholder="+1 234-567-8900" data-testid="input-candidate-phone" />
                   </FormControl>
+                  <p className="text-xs text-muted-foreground">Include country code if applicable</p>
                   <FormMessage />
                 </FormItem>
               )}

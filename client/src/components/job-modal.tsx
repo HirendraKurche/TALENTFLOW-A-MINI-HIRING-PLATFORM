@@ -81,6 +81,24 @@ export function JobModal({ open, onClose, onSubmit, job, isLoading, existingJobs
     }
   }, [job, open, form]);
 
+  // Auto-generate slug from title
+  const generateSlug = (title: string) => {
+    return title
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, '')
+      .replace(/[\s_-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  };
+
+  const handleTitleChange = (value: string) => {
+    form.setValue('title', value);
+    // Only auto-generate slug if creating new job or slug is empty
+    if (!job && !form.getValues('slug')) {
+      form.setValue('slug', generateSlug(value));
+    }
+  };
+
   const handleSubmit = (data: JobFormData) => {
     const duplicate = existingJobs.find((j) => j.slug === data.slug && j.id !== job?.id);
     if (duplicate) {
@@ -107,7 +125,12 @@ export function JobModal({ open, onClose, onSubmit, job, isLoading, existingJobs
                   <FormItem>
                     <FormLabel>Job Title *</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Senior Frontend Engineer" data-testid="input-job-title" />
+                      <Input 
+                        {...field} 
+                        onChange={(e) => handleTitleChange(e.target.value)}
+                        placeholder="Senior Frontend Engineer" 
+                        data-testid="input-job-title" 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

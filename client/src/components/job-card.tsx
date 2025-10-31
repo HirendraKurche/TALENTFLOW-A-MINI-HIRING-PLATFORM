@@ -54,18 +54,24 @@ export function JobCard({ job, onEdit, onArchive, isDragging, dragHandleProps }:
         </div>
       </CardContent>
       <CardFooter className="flex flex-wrap gap-4 text-sm text-muted-foreground pt-3">
-        <div className="flex items-center gap-1">
-          <MapPin className="h-3 w-3" />
-          <span>{job.location}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Briefcase className="h-3 w-3" />
-          <span>{job.employmentType}</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          <span>{new Date(job.createdAt!).toLocaleDateString()}</span>
-        </div>
+        {job.location && (
+          <div className="flex items-center gap-1">
+            <MapPin className="h-3 w-3" />
+            <span>{job.location}</span>
+          </div>
+        )}
+        {job.employmentType && (
+          <div className="flex items-center gap-1">
+            <Briefcase className="h-3 w-3" />
+            <span>{job.employmentType}</span>
+          </div>
+        )}
+        {job.createdAt && (
+          <div className="flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            <span>{new Date(job.createdAt).toLocaleDateString()}</span>
+          </div>
+        )}
       </CardFooter>
     </Card>
   );

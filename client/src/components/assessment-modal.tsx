@@ -20,6 +20,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import { AssessmentBuilder } from "./assessment-builder";
 import { AssessmentPreview } from "./assessment-preview";
 import type { AssessmentSection } from "@shared/schema";
@@ -49,6 +51,7 @@ export function AssessmentModal({ open, onClose, onSubmit, isLoading }: Assessme
     },
   ]);
   const [showPreview, setShowPreview] = useState(false);
+  const [validationError, setValidationError] = useState<string>("");
 
   const form = useForm<AssessmentFormData>({
     resolver: zodResolver(assessmentSchema),
@@ -60,6 +63,38 @@ export function AssessmentModal({ open, onClose, onSubmit, isLoading }: Assessme
   });
 
   const handleSubmit = (data: AssessmentFormData) => {
+    setValidationError("");
+    
+    // Validate that at least one question exists
+    const totalQuestions = sections.reduce((acc, section) => acc + section.questions.length, 0);
+    if (totalQuestions === 0) {
+      setValidationError("Please add at least one question to the assessment");
+      return;
+    }
+    
+    // Validate section titles
+    for (const section of sections) {
+      if (!section.title.trim()) {
+        setValidationError("All sections must have a title");
+        return;
+      }
+    }
+    
+    // Validate that single/multiple choice questions have options
+    for (const section of sections) {
+      for (const question of section.questions) {
+        if (!question.question.trim()) {
+          setValidationError("All questions must have text");
+          return;
+        }
+        if ((question.type === "single" || question.type === "multiple") && 
+            (!question.options || question.options.length === 0 || question.options.every(o => !o.trim()))) {
+          setValidationError(`Question "${question.question}" requires at least one option`);
+          return;
+        }
+      }
+    }
+    
     onSubmit({ ...data, sections });
   };
 
@@ -73,6 +108,13 @@ export function AssessmentModal({ open, onClose, onSubmit, isLoading }: Assessme
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            {validationError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{validationError}</AlertDescription>
+              </Alert>
+            )}
+            
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}

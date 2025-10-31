@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Briefcase } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,7 +51,7 @@ export default function Jobs() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const { toast } = useToast();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<{ jobs: Job[]; page: number; pageSize: number; total: number }>({
     queryKey: ["/api/jobs", { search, status: statusFilter, tags: tagsFilter, page, pageSize, sort: sort === "order" ? undefined : sort }],
   });
 
@@ -59,7 +59,9 @@ export default function Jobs() {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      const tagsArray = data.tags ? data.tags.split(",").map((t: string) => t.trim()) : [];
+      const tagsArray = data.tags 
+        ? data.tags.split(",").map((t: string) => t.trim()).filter((t: string) => t.length > 0)
+        : [];
       return apiRequest("/api/jobs", {
         method: "POST",
         body: JSON.stringify({ ...data, tags: tagsArray, order: jobs.length }),
@@ -77,7 +79,9 @@ export default function Jobs() {
 
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
-      const tagsArray = data.tags ? data.tags.split(",").map((t: string) => t.trim()) : [];
+      const tagsArray = data.tags 
+        ? data.tags.split(",").map((t: string) => t.trim()).filter((t: string) => t.length > 0)
+        : [];
       return apiRequest(`/api/jobs/${selectedJob?.id}`, {
         method: "PATCH",
         body: JSON.stringify({ ...data, tags: tagsArray }),
@@ -235,8 +239,20 @@ export default function Jobs() {
           ))}
         </div>
       ) : jobs.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">No jobs found</p>
+        <div className="text-center py-12 border rounded-lg">
+          <Briefcase className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+          <p className="text-lg font-medium mb-1">No jobs found</p>
+          <p className="text-muted-foreground mb-4">
+            {search || tagsFilter || statusFilter !== "all"
+              ? "Try adjusting your filters"
+              : "Create your first job posting to get started"}
+          </p>
+          {!search && !tagsFilter && statusFilter === "all" && (
+            <Button onClick={handleCreate}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Job
+            </Button>
+          )}
         </div>
       ) : (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>

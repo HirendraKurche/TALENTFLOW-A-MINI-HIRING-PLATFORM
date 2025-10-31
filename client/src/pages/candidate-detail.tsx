@@ -226,10 +226,19 @@ export default function CandidateDetail() {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="outline" className="w-full justify-start" data-testid="button-view-resume">
-                <FileText className="h-4 w-4 mr-2" />
-                View Resume
-              </Button>
+              {candidate.resumeUrl ? (
+                <a href={candidate.resumeUrl} target="_blank" rel="noopener noreferrer">
+                  <Button variant="outline" className="w-full justify-start" data-testid="button-view-resume">
+                    <FileText className="h-4 w-4 mr-2" />
+                    View Resume
+                  </Button>
+                </a>
+              ) : (
+                <Button variant="outline" className="w-full justify-start" disabled data-testid="button-view-resume">
+                  <FileText className="h-4 w-4 mr-2" />
+                  No Resume Uploaded
+                </Button>
+              )}
               <Button variant="outline" className="w-full justify-start" data-testid="button-schedule-interview">
                 <Clock className="h-4 w-4 mr-2" />
                 Schedule Interview

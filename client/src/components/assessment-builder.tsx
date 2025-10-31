@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Plus, Trash2, GripVertical, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -97,18 +97,30 @@ export function AssessmentBuilder({ sections, onSectionsChange }: AssessmentBuil
     <div className="space-y-4" data-testid="assessment-builder">
       {sections.map((section) => (
         <Card key={section.id}>
-          <CardHeader className="flex flex-row items-center gap-3 space-y-0">
+          <CardHeader 
+            className="flex flex-row items-center gap-3 space-y-0 cursor-pointer"
+            onClick={() => setExpandedSection(expandedSection === section.id ? null : section.id)}
+          >
+            {expandedSection === section.id ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            )}
             <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
             <Input
               value={section.title}
               onChange={(e) => updateSection(section.id, { title: e.target.value })}
+              onClick={(e) => e.stopPropagation()}
               className="flex-1 font-semibold"
               data-testid={`input-section-title-${section.id}`}
             />
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => deleteSection(section.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                deleteSection(section.id);
+              }}
               data-testid={`button-delete-section-${section.id}`}
               className="h-8 w-8"
             >
@@ -182,7 +194,7 @@ export function AssessmentBuilder({ sections, onSectionsChange }: AssessmentBuil
                               value={question.options?.join(", ") || ""}
                               onChange={(e) =>
                                 updateQuestion(section.id, question.id, {
-                                  options: e.target.value.split(",").map((o) => o.trim()),
+                                  options: e.target.value.split(",").map((o) => o.trim()).filter(o => o.length > 0),
                                 })
                               }
                               placeholder="Option 1, Option 2, Option 3"

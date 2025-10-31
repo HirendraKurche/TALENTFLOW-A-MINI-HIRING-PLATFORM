@@ -4,7 +4,7 @@ import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import type { Job, Candidate } from "@shared/schema";
+import type { Job, Candidate, Assessment } from "@shared/schema";
 import { useMemo } from "react";
 
 export default function Dashboard() {
@@ -16,6 +16,11 @@ export default function Dashboard() {
 
   const { data: candidatesData, isLoading: candidatesLoading } = useQuery<{ candidates: Candidate[]; total: number }>({
     queryKey: ["/api/candidates", { page: 1, pageSize: 50 }], // Get first page, but total includes all 1000
+    staleTime: 30000, // Cache for 30 seconds
+  });
+
+  const { data: assessmentsData, isLoading: assessmentsLoading } = useQuery<{ assessments: Assessment[] }>({
+    queryKey: ["/api/assessments"],
     staleTime: 30000, // Cache for 30 seconds
   });
 
@@ -47,13 +52,13 @@ export default function Dashboard() {
     },
     {
       title: "Assessments",
-      value: 3,
+      value: assessmentsData?.assessments?.length || 0,
       icon: FileText,
       color: "text-purple-500",
       link: "/assessments",
-      loading: false,
+      loading: assessmentsLoading,
     },
-  ], [jobsData, candidatesData, jobsLoading, candidatesLoading]);
+  ], [jobsData, candidatesData, assessmentsData, jobsLoading, candidatesLoading, assessmentsLoading]);
 
   return (
     <div className="space-y-8" data-testid="page-dashboard">

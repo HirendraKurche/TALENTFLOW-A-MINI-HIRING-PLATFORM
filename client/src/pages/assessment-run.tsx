@@ -53,6 +53,10 @@ export default function AssessmentRun() {
           next[q.id] = "Required";
           continue;
         }
+        if (q.type === "file" && q.required && !v) {
+          next[q.id] = "File is required";
+          continue;
+        }
         if (q.type === "numeric" && v !== undefined && v !== "") {
           const num = Number(v);
           if (Number.isNaN(num)) next[q.id] = "Must be a number";
@@ -71,9 +75,22 @@ export default function AssessmentRun() {
   const submitMutation = useMutation({
     mutationFn: async () => {
       if (!assessment) return;
+      
+      // Convert File objects to base64 or file names for serialization
+      const serializableResponses = { ...responses };
+      for (const key in serializableResponses) {
+        if (serializableResponses[key] instanceof File) {
+          serializableResponses[key] = {
+            fileName: serializableResponses[key].name,
+            fileSize: serializableResponses[key].size,
+            fileType: serializableResponses[key].type,
+          };
+        }
+      }
+      
       await apiRequest(`/api/assessments/${assessment.id}/submit`, {
         method: "POST",
-        body: JSON.stringify({ candidateId: "local", responses }),
+        body: JSON.stringify({ candidateId: "local", responses: serializableResponses }),
       });
     },
     onSuccess: () => {
@@ -92,7 +109,39 @@ export default function AssessmentRun() {
   };
 
   if (isLoading) return <div className="h-64 bg-muted animate-pulse rounded-lg" />;
-  if (!assessment) return <div>No assessment found for this job.</div>;
+  
+  if (!assessment) {
+    return (
+      <div className="space-y-6" data-testid="page-assessment-run">
+        <div className="flex items-center gap-4">
+          <Link href="/assessments">
+            <Button variant="ghost" size="icon" className="h-9 w-9">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-semibold">No Assessment Found</h1>
+            <p className="text-muted-foreground">Assessment not available for this job</p>
+          </div>
+        </div>
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <p className="text-muted-foreground mb-4">
+              No assessment has been created for this job yet.
+            </p>
+            <div className="flex gap-2">
+              <Link href={`/jobs/${jobId}`}>
+                <Button variant="outline">View Job Details</Button>
+              </Link>
+              <Link href="/assessments">
+                <Button>Go to Assessments</Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6" data-testid="page-assessment-run">
@@ -155,13 +204,38 @@ export default function AssessmentRun() {
                     <Input value={responses[q.id] || ""} onChange={(e) => setValue(q.id, e.target.value)} placeholder="Your answer" />
                   )}
                   {q.type === "long_text" && (
-                    <Textarea value={responses[q.id] || ""} onChange={(e) => setValue(q.id, e.target.value)} rows={4} maxLength={q.maxLength} placeholder="Your answer" />
+                    <div>
+                      <Textarea value={responses[q.id] || ""} onChange={(e) => setValue(q.id, e.target.value)} rows={4} maxLength={q.maxLength} placeholder="Your answer" />
+                      {q.maxLength && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {(responses[q.id] || "").length} / {q.maxLength} characters
+                        </p>
+                      )}
+                    </div>
                   )}
                   {q.type === "numeric" && (
-                    <Input type="number" value={responses[q.id] || ""} onChange={(e) => setValue(q.id, e.target.value)} min={q.minValue} max={q.maxValue} placeholder="Enter a number" />
+                    <div>
+                      <Input type="number" value={responses[q.id] || ""} onChange={(e) => setValue(q.id, e.target.value)} min={q.minValue} max={q.maxValue} placeholder="Enter a number" />
+                      {(q.minValue !== undefined || q.maxValue !== undefined) && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {q.minValue !== undefined && q.maxValue !== undefined
+                            ? `Range: ${q.minValue} - ${q.maxValue}`
+                            : q.minValue !== undefined
+                            ? `Minimum: ${q.minValue}`
+                            : `Maximum: ${q.maxValue}`}
+                        </p>
+                      )}
+                    </div>
                   )}
                   {q.type === "file" && (
-                    <Input type="file" onChange={(e) => setValue(q.id, e.target.files?.[0])} />
+                    <div>
+                      <Input type="file" onChange={(e) => setValue(q.id, e.target.files?.[0])} />
+                      {responses[q.id] && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Selected: {responses[q.id].name} ({(responses[q.id].size / 1024).toFixed(2)} KB)
+                        </p>
+                      )}
+                    </div>
                   )}
                   {errors[q.id] && <div className="text-destructive text-sm">{errors[q.id]}</div>}
                 </div>

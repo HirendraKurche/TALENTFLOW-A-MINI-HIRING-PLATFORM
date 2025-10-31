@@ -20,6 +20,12 @@ export function AssessmentPreview({ sections, title = "Assessment Preview" }: As
     setResponses((prev) => ({ ...prev, [questionId]: value }));
   };
 
+  const isVisible = (question: any) => {
+    if (!question.showIfQuestionId) return true;
+    const actual = responses[question.showIfQuestionId];
+    return String(actual) === String(question.showIfEquals);
+  };
+
   return (
     <div className="space-y-6 sticky top-8 max-h-screen overflow-y-auto" data-testid="assessment-preview">
       <div className="bg-muted/30 p-6 rounded-lg">
@@ -35,8 +41,10 @@ export function AssessmentPreview({ sections, title = "Assessment Preview" }: As
             <h3 className="text-lg font-semibold">{section.title}</h3>
           </CardHeader>
           <CardContent className="space-y-6">
-            {section.questions.map((question) => (
-              <div key={question.id} className="space-y-2">
+            {section.questions.map((question) => {
+              if (!isVisible(question)) return null;
+              return (
+                <div key={question.id} className="space-y-2">
                 <Label>
                   {question.question}
                   {question.required && <span className="text-destructive ml-1">*</span>}
@@ -96,34 +104,60 @@ export function AssessmentPreview({ sections, title = "Assessment Preview" }: As
                 )}
 
                 {question.type === "long_text" && (
-                  <Textarea
-                    value={responses[question.id] || ""}
-                    onChange={(e) => updateResponse(question.id, e.target.value)}
-                    placeholder="Your answer"
-                    rows={4}
-                    maxLength={question.maxLength}
-                  />
+                  <div>
+                    <Textarea
+                      value={responses[question.id] || ""}
+                      onChange={(e) => updateResponse(question.id, e.target.value)}
+                      placeholder="Your answer"
+                      rows={4}
+                      maxLength={question.maxLength}
+                    />
+                    {question.maxLength && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {(responses[question.id] || "").length} / {question.maxLength} characters
+                      </p>
+                    )}
+                  </div>
                 )}
 
                 {question.type === "numeric" && (
-                  <Input
-                    type="number"
-                    value={responses[question.id] || ""}
-                    onChange={(e) => updateResponse(question.id, e.target.value)}
-                    min={question.minValue}
-                    max={question.maxValue}
-                    placeholder="Enter a number"
-                  />
+                  <div>
+                    <Input
+                      type="number"
+                      value={responses[question.id] || ""}
+                      onChange={(e) => updateResponse(question.id, e.target.value)}
+                      min={question.minValue}
+                      max={question.maxValue}
+                      placeholder="Enter a number"
+                    />
+                    {(question.minValue !== undefined || question.maxValue !== undefined) && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {question.minValue !== undefined && question.maxValue !== undefined
+                          ? `Range: ${question.minValue} - ${question.maxValue}`
+                          : question.minValue !== undefined
+                          ? `Minimum: ${question.minValue}`
+                          : `Maximum: ${question.maxValue}`}
+                      </p>
+                    )}
+                  </div>
                 )}
 
                 {question.type === "file" && (
-                  <Input
-                    type="file"
-                    onChange={(e) => updateResponse(question.id, e.target.files?.[0])}
-                  />
+                  <div>
+                    <Input
+                      type="file"
+                      onChange={(e) => updateResponse(question.id, e.target.files?.[0])}
+                    />
+                    {responses[question.id] && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Selected: {responses[question.id].name}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
-            ))}
+            );
+            })}
           </CardContent>
         </Card>
       ))}

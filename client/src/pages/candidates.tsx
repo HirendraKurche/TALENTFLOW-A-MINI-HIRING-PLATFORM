@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Search, LayoutGrid, LayoutList, Plus } from "lucide-react";
+import { Search, LayoutGrid, LayoutList, Plus, Users as UsersIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -201,6 +201,22 @@ export default function Candidates() {
           {[...Array(10)].map((_, i) => (
             <div key={i} className="h-20 bg-muted animate-pulse rounded-lg" />
           ))}
+        </div>
+      ) : filteredCandidates.length === 0 ? (
+        <div className="text-center py-12 border rounded-lg">
+          <UsersIcon className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+          <p className="text-lg font-medium mb-1">No candidates found</p>
+          <p className="text-muted-foreground mb-4">
+            {search || stageFilter !== "all"
+              ? "Try adjusting your search or filters"
+              : "Add your first candidate to start building your talent pipeline"}
+          </p>
+          {!search && stageFilter === "all" && (
+            <Button onClick={() => setIsAddModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Candidate
+            </Button>
+          )}
         </div>
       ) : view === "list" ? (
         <div

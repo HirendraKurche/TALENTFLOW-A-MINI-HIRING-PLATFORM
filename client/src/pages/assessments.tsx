@@ -14,7 +14,7 @@ export default function Assessments() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { toast } = useToast();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<{ assessments: Assessment[] }>({
     queryKey: ["/api/assessments"],
   });
 
@@ -100,9 +100,15 @@ export default function Assessments() {
                   <div className="text-xs text-muted-foreground">
                     Created {new Date(assessment.createdAt!).toLocaleDateString()}
                   </div>
-                  <Link href={`/assessments/${assessment.jobId}/run`}>
-                    <Button size="sm" variant="outline">Open Runtime</Button>
-                  </Link>
+                  {assessment.jobId ? (
+                    <Link href={`/assessments/${assessment.jobId}/run`}>
+                      <Button size="sm" variant="outline">Open Runtime</Button>
+                    </Link>
+                  ) : (
+                    <Button size="sm" variant="outline" disabled title="No job linked">
+                      Open Runtime
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
